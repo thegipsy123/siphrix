@@ -1,0 +1,10 @@
+{
+  "username": "brown",
+  "status": "available",
+  "profile_picture": "",
+  "preferences": {
+    "notifications": true,
+    "language": "en",
+    "theme": "dark"
+  }
+}
