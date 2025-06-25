@@ -36,22 +36,13 @@ export default function Login() {
        }
 
 
+       const vaultJson = JSON.parse(localStorage.getItem("vault"));
+       if (!vaultJson) throw new Error("❌ Vault not found on this device");
 
-       // 🧩 Try loading encrypted vault from server
-       const vaultRes = await fetch(`/userdata/${hashedIdentifier}.enc.json`);
-       if (!vaultRes.ok) throw new Error('❌ Could not find vault');
+       const vaultSalt = new Uint8Array(vaultJson.pbkdf2_salt);
+       const iv = new Uint8Array(vaultJson.iv);
+       const encryptedData = new Uint8Array(vaultJson.data);
 
-       const vaultJson = await vaultRes.json();
-       function toUint8Array(input) {
-         if (Array.isArray(input)) return new Uint8Array(input);
-         if (typeof input === 'string') return new Uint8Array(atob(input).split('').map(c => c.charCodeAt(0)));
-         if (input instanceof Uint8Array) return input;
-         return new Uint8Array([]);
-       }
-
-       const vaultSalt = toUint8Array(vaultJson.pbkdf2_salt);
-       const iv = toUint8Array(vaultJson.iv);
-       const encryptedData = toUint8Array(vaultJson.data);
 
 
 
