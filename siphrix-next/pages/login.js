@@ -36,7 +36,9 @@ export default function Login() {
        }
 
 
-       const vaultJson = JSON.parse(localStorage.getItem("vault"));
+       const vaultRaw = localStorage.getItem(`vault_${username}`);
+       if (!vaultRaw) throw new Error("❌ Vault not found on this device");
+       const vaultJson = JSON.parse(vaultRaw);
        if (!vaultJson) throw new Error("❌ Vault not found on this device");
 
        const vaultSalt = new Uint8Array(vaultJson.pbkdf2_salt);
