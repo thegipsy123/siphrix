@@ -25,8 +25,7 @@ export default function Login() {
 
 
     try {
-       const { loadAuthDataRemote } = await import('../utils/auth-storage.js');
-       const saved = await loadAuthDataRemote(username, password);
+
        let hashedIdentifier = '';
        if (typeof window !== 'undefined') {
          const { hashIdentifierWithPepper } = await import('../utils/auth-storage.js');
@@ -34,6 +33,12 @@ export default function Login() {
        } else {
          throw new Error('❌ Cannot hash identifier outside the browser');
        }
+
+       // 🧠 Reconstruct what saveAuthData stored
+        const saved = JSON.parse(localStorage.getItem(`auth_${username}`));
+        if (!saved) throw new Error('❌ No saved auth data for this user');
+        const { identifier, password_hash, salt } = saved;
+
 
 
        const vaultRaw = localStorage.getItem(`vault_${username}`);
@@ -94,7 +99,6 @@ export default function Login() {
        const { public: pubKeyJwk, private: privKeyJwk } = vault.keys.ecdh;
        const ecdhKeyPair = await importECDHKeyPair(pubKeyJwk, privKeyJwk);
        window.siphrixECDH = ecdhKeyPair; // you can also put in memory or localStorage
-       const { identifier, password_hash, salt } = saved;
 
        if (identifier !== hashedIdentifier) {
          setMessage('❌ Invalid username');

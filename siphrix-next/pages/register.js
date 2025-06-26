@@ -122,19 +122,13 @@ export default function Register() {
           vaultBytes
       );
 
-        // 🌐 3. Upload to server (write to /public/userdata)
-      const payload = {
+      localStorage.setItem(`vault_${username}`, JSON.stringify({
         iv: Array.from(iv),
         data: Array.from(new Uint8Array(encryptedVault)),
         pbkdf2_salt: Array.from(pbkdf2Salt),
-      };
+      }));
 
 
-      await fetch(`/api/upload-vault?user=${hashedIdentifier}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
 
 
 

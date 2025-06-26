@@ -194,9 +194,37 @@ useEffect(() => {
     }
   }
 
+   // ✅ After P2P established — send your DHT info
+  const savedVault = localStorage.getItem('vault_' + profile.name);
+  if (savedVault) {
+    const parsed = JSON.parse(savedVault);
+    const hash = await hashUsername(profile.name);
+    sendPeerMessage(JSON.stringify({
+      type: 'DHT_BROADCAST',
+      data: {
+        identifier: hash,
+        public_key: parsed.rsa_public,
+        avatar: profile.avatar || "",
+        bio: profile.bio,
+        status: "Online"
+      }
+    }));
+  }
+
+
   function handlePeerMessage(data) {
   try {
     const parsed = JSON.parse(data);
+    if (parsed.type === 'DHT_BROADCAST') {
+      const hash = parsed.data.identifier;
+      if (!window.siphrixDHT) window.siphrixDHT = {};
+      if (!window.siphrixDHT[hash]) {
+        window.siphrixDHT[hash] = parsed.data;
+        console.log("📡 Added DHT peer:", parsed.data);
+      }
+      return;
+    }
+
     if (parsed.type === 'file' && parsed.metadata) {
       const blob = new Blob(
         [Uint8Array.from(parsed.metadata.encrypted.ciphertext)],
@@ -247,15 +275,16 @@ const handleSend = async () => {
 
   // Try fetch key from local first
   if (!publicKeys[recipient]) {
-    const hashed = await hashUsername(recipient);
-    const dhtData = await fetch(`/userdata/${hashed}.json`).then(res => res.json()).catch(() => null);
-    if (dhtData && dhtData.public_key) {
-      publicKeys[recipient] = dhtData.public_key;
-    } else {
-      alert("❌ Recipient not found in DHT.");
-      return;
-    }
+  const hashed = await hashUsername(recipient);
+  const entry = window.siphrixDHT?.[hashed];
+  if (entry?.public_key) {
+    publicKeys[recipient] = entry.public_key;
+  } else {
+    alert("❌ Recipient not found in local DHT.");
+    return;
   }
+}
+
 
   const route = await fetch(`/api/route?to=${recipient}`).then(res => res.json());
   let encrypted = plainText;
