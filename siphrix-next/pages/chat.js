@@ -195,21 +195,25 @@ useEffect(() => {
   }
 
    // ✅ After P2P established — send your DHT info
-  const savedVault = localStorage.getItem('vault_' + profile.name);
-  if (savedVault) {
-    const parsed = JSON.parse(savedVault);
-    const hash = await hashUsername(profile.name);
-    sendPeerMessage(JSON.stringify({
-      type: 'DHT_BROADCAST',
-      data: {
-        identifier: hash,
-        public_key: parsed.rsa_public,
-        avatar: profile.avatar || "",
-        bio: profile.bio,
-        status: "Online"
-      }
-    }));
+const savedVault = localStorage.getItem('vault_' + profile.name);
+    if (savedVault) {
+      const parsed = JSON.parse(savedVault);
+      const hash = await hashUsername(profile.name); // ✅ NOW SAFE
+      sendPeerMessage(JSON.stringify({
+        type: 'DHT_BROADCAST',
+        data: {
+          identifier: hash,
+          public_key: parsed.rsa_public,
+          avatar: profile.avatar || "",
+          bio: profile.bio,
+          status: "Online"
+        }
+      }));
+    }
   }
+
+  setupP2P(); // ✅ Call the async function
+}, []);
 
 
   function handlePeerMessage(data) {

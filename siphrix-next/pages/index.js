@@ -9,8 +9,8 @@ export default function HomePage() {
   return (
     <>
       <Head>
-        <title>Siphrix Landing Page</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+          <title>Siphrix Landing Page</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
 
       {/* ✅ Navigation Section */}
