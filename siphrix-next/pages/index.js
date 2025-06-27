@@ -53,7 +53,7 @@ export default function HomePage() {
           </div>
 
           <div className="hero-right">
-            <img
+            <image
               className="hero-image"
               src="https://images.unsplash.com/photo-1633265486064-086b219458ec?q=80&w=1200"
               alt="Secure App UI"

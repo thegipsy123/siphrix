@@ -68,17 +68,60 @@ export default function Chat() {
   const [profile, setProfile] = useState({ name: '', bio: '' });
 
   // ✅ Check if session exists
-  useEffect(() => {
-    const savedProfile = localStorage.getItem('siphrix_profile');
-    if (savedProfile) {
-      setProfile(JSON.parse(savedProfile));
+useEffect(() => {
+  const run = async () => {
+    const sessionRaw = localStorage.getItem('siphrix_session');
+    if (!sessionRaw) {
+      router.push('/login');
+      return;
+    }
+    const session = JSON.parse(sessionRaw);
+    if (Date.now() > session.expires) {
+      localStorage.removeItem('siphrix_session');
+      router.push('/login');
+      return;
     }
 
-    const session = localStorage.getItem('siphrix_session');
-    if (!session) {
-      router.push('/login');
+    const savedOffer = localStorage.getItem('webrtc_offer');
+    const savedAnswer = localStorage.getItem('webrtc_answer');
+
+    if (!savedOffer && !savedAnswer) {
+      const offer = await initConnection(handlePeerMessage);
+      localStorage.setItem('webrtc_offer', offer);
+      alert("📤 Share this offer with your peer:\n\n" + offer);
+    } else if (savedOffer && !savedAnswer) {
+      const answer = prompt("📥 Paste the answer SDP:");
+      if (answer) {
+        await completeConnection(answer);
+        localStorage.setItem('webrtc_answer', answer);
+        alert("✅ Connection established!");
+      }
+    } else if (!savedOffer && savedAnswer) {
+      const offer = prompt("📥 Paste the offer SDP:");
+      const answer = await connectToOffer(offer, handlePeerMessage);
+      localStorage.setItem('webrtc_answer', answer);
+      alert("✅ Answer sent. You are connected!");
     }
-  }, []);
+
+    const savedVault = localStorage.getItem('vault_' + profile.name);
+    if (savedVault) {
+      const parsed = JSON.parse(savedVault);
+      const hash = await hashUsername(profile.name);
+      sendPeerMessage(JSON.stringify({
+        type: 'DHT_BROADCAST',
+        data: {
+          identifier: hash,
+          public_key: parsed.rsa_public,
+          avatar: profile.avatar || "",
+          bio: profile.bio,
+          status: "Online"
+        }
+      }));
+    }
+  };
+
+  run();
+}, []);
 
 
 
@@ -157,63 +200,6 @@ function panicWipe() {
 
 
 
-useEffect(() => {
-
-  const sessionRaw = localStorage.getItem('siphrix_session');
-   if (!sessionRaw) {
-     router.push('/login');
-     return;
-   }
-  const session = JSON.parse(sessionRaw);
-   if (Date.now() > session.expires) {
-     localStorage.removeItem('siphrix_session');
-     router.push('/login');
-     return;
-   }
-
-  const savedOffer = localStorage.getItem('webrtc_offer');
-  const savedAnswer = localStorage.getItem('webrtc_answer');
-
-  async function setupP2P() {
-    if (!savedOffer && !savedAnswer) {
-      const offer = await initConnection(handlePeerMessage);
-      localStorage.setItem('webrtc_offer', offer);
-      alert("📤 Share this offer with your peer:\n\n" + offer);
-    } else if (savedOffer && !savedAnswer) {
-      const answer = prompt("📥 Paste the answer SDP:");
-      if (answer) {
-        await completeConnection(answer);
-        localStorage.setItem('webrtc_answer', answer);
-        alert("✅ Connection established!");
-      }
-    } else if (!savedOffer && savedAnswer) {
-      const offer = prompt("📥 Paste the offer SDP:");
-      const answer = await connectToOffer(offer, handlePeerMessage);
-      localStorage.setItem('webrtc_answer', answer);
-      alert("✅ Answer sent. You are connected!");
-    }
-  }
-
-   // ✅ After P2P established — send your DHT info
-const savedVault = localStorage.getItem('vault_' + profile.name);
-    if (savedVault) {
-      const parsed = JSON.parse(savedVault);
-      const hash = await hashUsername(profile.name); // ✅ NOW SAFE
-      sendPeerMessage(JSON.stringify({
-        type: 'DHT_BROADCAST',
-        data: {
-          identifier: hash,
-          public_key: parsed.rsa_public,
-          avatar: profile.avatar || "",
-          bio: profile.bio,
-          status: "Online"
-        }
-      }));
-    }
-  }
-
-  setupP2P(); // ✅ Call the async function
-}, []);
 
 
   function handlePeerMessage(data) {
@@ -250,13 +236,6 @@ const savedVault = localStorage.getItem('vault_' + profile.name);
   // If not a file message, treat as normal text:
   setMessages(prev => [...prev, { text: data, sender: 'them' }]);
 }
-
-
-  setupP2P();
-}, []);
-
-
-
 
 
 async function decryptText(msgText) {

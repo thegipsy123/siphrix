@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
 
   experimental: {
-    wasm: true, // ✅ enable WebAssembly
+
   },
 
   webpack(config, { isServer }) {
